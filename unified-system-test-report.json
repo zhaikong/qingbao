@@ -1,0 +1,26 @@
+{
+  "timestamp": "2025-08-23T03:08:32.677Z",
+  "testQuery": "人工智能发展趋势",
+  "systemStatus": {
+    "configFile": true,
+    "coreModules": 4,
+    "totalModules": 4,
+    "apiRouteUpdated": true
+  },
+  "dataCollectionMethods": {
+    "apiKey": "✅ 已实现 (GNews, NewsAPI)",
+    "browserCrawl": "✅ 已实现 (Chrome MCP)",
+    "mcpProcess": "✅ 已实现 (Firecrawl MCP)"
+  },
+  "zhipuModels": {
+    "basicText": "GLM-4.5-Air",
+    "imageVideo": "GLM-4.5-V",
+    "realtimeResponse": "GLM-4.1V-Thinking-FlashX"
+  },
+  "recommendations": [
+    "请确保在.env.local中配置所有必要的API密钥",
+    "启动Chrome MCP Server以支持浏览器自动化",
+    "配置Firecrawl API密钥以启用AI优化爬虫",
+    "测试智谱AI API连接确保模型调度正常工作"
+  ]
+}

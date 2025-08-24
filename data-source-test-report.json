@@ -1,0 +1,63 @@
+{
+  "summary": {
+    "total": 5,
+    "success": 2,
+    "warning": 0,
+    "error": 3,
+    "overallStatus": "poor"
+  },
+  "details": {
+    "zhipuAI": {
+      "status": "success",
+      "message": "✅ 智谱AI API连接成功！响应: 连接测试成功",
+      "timestamp": "2025-08-05T10:52:31.686Z",
+      "details": {
+        "model": "glm-4-flashx",
+        "usage": {
+          "completion_tokens": 5,
+          "prompt_tokens": 12,
+          "total_tokens": 17
+        }
+      }
+    },
+    "arxivAPI": {
+      "status": "error",
+      "message": "❌ arXiv API响应异常，状态码: 301",
+      "timestamp": "2025-08-05T10:52:31.701Z"
+    },
+    "rssFeeds": {
+      "status": "error",
+      "message": "RSS源测试完成 (0/3 成功):\n❌ BBC News: 请求超时\n❌ CNN RSS: read ECONNRESET\n❌ Reuters: 请求超时",
+      "timestamp": "2025-08-05T10:52:51.789Z",
+      "details": {
+        "totalFeeds": 3,
+        "successfulFeeds": 0,
+        "results": [
+          "❌ BBC News: 请求超时",
+          "❌ CNN RSS: read ECONNRESET",
+          "❌ Reuters: 请求超时"
+        ]
+      }
+    },
+    "googleNews": {
+      "status": "error",
+      "message": "❌ Google搜索连接失败: 请求超时",
+      "timestamp": "2025-08-05T10:52:41.343Z"
+    },
+    "networkConnectivity": {
+      "status": "success",
+      "message": "网络连通性测试 (3/3 成功):\n✅ 百度: 200\n✅ GitHub: 200\n✅ 智谱AI: 200",
+      "timestamp": "2025-08-05T10:52:31.828Z",
+      "details": {
+        "totalSites": 3,
+        "successfulSites": 3,
+        "results": [
+          "✅ 百度: 200",
+          "✅ GitHub: 200",
+          "✅ 智谱AI: 200"
+        ]
+      }
+    }
+  },
+  "timestamp": "2025-08-05T10:52:51.837Z"
+}

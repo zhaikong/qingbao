@@ -1,0 +1,15 @@
+{
+  "dataCollection": {
+    "minResultsRatio": 0.3,
+    "qualityThreshold": 0.6,
+    "enableBrowserSearch": true,
+    "enableChromeAutomation": true,
+    "maxSearchRounds": 3
+  },
+  "reportGeneration": {
+    "minDataQuality": 0.5,
+    "minContentLength": 500,
+    "requireMultipleSources": false
+  },
+  "description": "降低数据收集阈值，允许更灵活的报告生成"
+}shu ju
