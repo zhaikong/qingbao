@@ -1,0 +1,465 @@
+import { POST, GET } from '@/app/api/generate-report/route'
+
+// Mock Web APIs for Jest environment
+global.Response = class MockResponse {
+  public status: number
+  public statusText: string
+  public headers: Map<string, string>
+  private _body: string
+
+  constructor(body?: any, init?: ResponseInit) {
+    this.status = init?.status || 200
+    this.statusText = init?.statusText || 'OK'
+    this.headers = new Map()
+    this._body = typeof body === 'string' ? body : JSON.stringify(body)
+    
+    if (init?.headers) {
+      Object.entries(init.headers).forEach(([key, value]) => {
+        this.headers.set(key.toLowerCase(), value as string)
+      })
+    }
+  }
+
+  async json() {
+    try {
+      return JSON.parse(this._body)
+    } catch {
+      throw new Error('Invalid JSON')
+    }
+  }
+
+  async text() {
+    return this._body
+  }
+
+  get ok() {
+    return this.status >= 200 && this.status < 300
+  }
+} as any
+
+// Mock NextResponse
+jest.mock('next/server', () => ({
+  NextRequest: class MockNextRequest {
+    public method: string
+    public url: string
+    public headers: Map<string, string>
+    private _body: string
+
+    constructor(url: string, options: any = {}) {
+      this.method = options.method || 'GET'
+      this.url = url
+      this.headers = new Map()
+      
+      if (options.headers) {
+        Object.entries(options.headers).forEach(([key, value]) => {
+          this.headers.set(key.toLowerCase(), value as string)
+        })
+      }
+      
+      this._body = options.body || ''
+    }
+
+    async json() {
+      try {
+        return JSON.parse(this._body)
+      } catch {
+        throw new Error('Invalid JSON')
+      }
+    }
+
+    async text() {
+      return this._body
+    }
+  },
+  NextResponse: {
+    json: (body: any, init?: ResponseInit) => {
+      const response = new global.Response(JSON.stringify(body), {
+        ...init,
+        headers: {
+          'Content-Type': 'application/json',
+          ...init?.headers
+        }
+      })
+      return response
+    }
+  }
+}))
+
+// Mock NextRequest for Jest environment
+class MockNextRequest {
+  public method: string
+  public url: string
+  public headers: Map<string, string>
+  private _body: string
+
+  constructor(url: string, options: any = {}) {
+    this.method = options.method || 'GET'
+    this.url = url
+    this.headers = new Map()
+    
+    if (options.headers) {
+      Object.entries(options.headers).forEach(([key, value]) => {
+        this.headers.set(key.toLowerCase(), value as string)
+      })
+    }
+    
+    this._body = options.body || ''
+  }
+
+  async json() {
+    try {
+      return JSON.parse(this._body)
+    } catch {
+      throw new Error('Invalid JSON')
+    }
+  }
+
+  async text() {
+    return this._body
+  }
+}
+
+// Mock the report generator
+jest.mock('@/lib/report-generator', () => ({
+  reportGenerator: {
+    generateReport: jest.fn()
+  },
+  generateIntelligenceReport: jest.fn().mockResolvedValue({
+    content: '# 测试报告\n\n这是一个测试生成的报告内容。',
+    metadata: {
+      wordCount: 100,
+      dataSourceCount: 5,
+      generationTime: 3.2,
+      template: 'comprehensive',
+      language: 'zh',
+      analysisDepth: 'detailed'
+    },
+    qualityAssessment: {
+      score: 85,
+      strengths: ['数据源质量优秀', '内容深度充分'],
+      improvements: ['建议增加更多引用'],
+      dataQuality: 90,
+      contentQuality: 85,
+      structureQuality: 80
+    }
+  })
+}))
+
+// Helper function to create mock request
+function createMockRequest(body: any): any {
+  return new MockNextRequest('http://localhost:3000/api/generate-report', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  })
+}
+
+describe('/api/generate-report', () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+  })
+
+  describe('POST请求', () => {
+    it('应该成功生成报告', async () => {
+      const request = createMockRequest({
+        topic: '人工智能发展趋势',
+        template: 'comprehensive',
+        language: 'zh',
+        analysisDepth: 'detailed'
+      })
+
+      const response = await POST(request)
+      const data = await response.json()
+
+      expect(response.status).toBe(200)
+      expect(data.success).toBe(true)
+      expect(data.report).toBeDefined()
+      expect(data.metadata).toBeDefined()
+      expect(data.qualityAssessment).toBeDefined()
+      expect(data.report).toContain('测试报告')
+    })
+
+    it('应该返回完整的响应数据结构', async () => {
+      const request = createMockRequest({
+        topic: '人工智能发展趋势'
+      })
+
+      const response = await POST(request)
+      const data = await response.json()
+
+      expect(data).toHaveProperty('success', true)
+      expect(data).toHaveProperty('report')
+      expect(data).toHaveProperty('metadata')
+      expect(data).toHaveProperty('qualityAssessment')
+      expect(data).toHaveProperty('dataSourceCount')
+      expect(data).toHaveProperty('generationTime')
+
+      // 检查metadata结构
+      expect(data.metadata).toHaveProperty('wordCount')
+      expect(data.metadata).toHaveProperty('dataSourceCount')
+      expect(data.metadata).toHaveProperty('generationTime')
+      expect(data.metadata).toHaveProperty('template')
+
+      // 检查qualityAssessment结构
+      expect(data.qualityAssessment).toHaveProperty('score')
+      expect(data.qualityAssessment).toHaveProperty('strengths')
+      expect(data.qualityAssessment).toHaveProperty('improvements')
+    })
+
+    it('应该处理缺少topic参数的情况', async () => {
+      const request = createMockRequest({
+        template: 'comprehensive'
+      })
+
+      const response = await POST(request)
+      const data = await response.json()
+
+      expect(response.status).toBe(400)
+      expect(data.error).toBe('请提供分析议题')
+    })
+
+    it('应该使用默认参数', async () => {
+      const { generateIntelligenceReport } = require('@/lib/report-generator')
+      
+      const request = createMockRequest({
+        topic: '人工智能发展趋势'
+      })
+
+      await POST(request)
+
+      expect(generateIntelligenceReport).toHaveBeenCalledWith(
+        '人工智能发展趋势',
+        expect.objectContaining({
+          template: 'comprehensive',
+          language: 'zh',
+          analysisDepth: 'detailed',
+          maxDataSources: 15,
+          includeCharts: false
+        })
+      )
+    })
+
+    it('应该传递自定义参数', async () => {
+      const { generateIntelligenceReport } = require('@/lib/report-generator')
+      
+      const request = createMockRequest({
+        topic: '人工智能发展趋势',
+        template: 'technical',
+        language: 'en',
+        analysisDepth: 'expert',
+        maxDataSources: 20,
+        focusAreas: ['技术', '政策']
+      })
+
+      await POST(request)
+
+      expect(generateIntelligenceReport).toHaveBeenCalledWith(
+        '人工智能发展趋势',
+        expect.objectContaining({
+          template: 'technical',
+          language: 'en',
+          analysisDepth: 'expert',
+          maxDataSources: 20,
+          focusAreas: ['技术', '政策']
+        })
+      )
+    })
+
+    it('应该处理数据源连接失败错误', async () => {
+      const { generateIntelligenceReport } = require('@/lib/report-generator')
+      generateIntelligenceReport.mockRejectedValueOnce(
+        new Error('未能获取到有效的数据源')
+      )
+
+      const request = createMockRequest({
+        topic: '人工智能发展趋势'
+      })
+
+      const response = await POST(request)
+      const data = await response.json()
+
+      expect(response.status).toBe(500)
+      expect(data.error).toBe('数据源连接失败')
+      expect(data.details).toBe('请检查网络连接或API配置，确保数据源服务正常运行')
+      expect(data.timestamp).toBeDefined()
+    })
+
+    it('应该处理智谱AI服务错误', async () => {
+      const { generateIntelligenceReport } = require('@/lib/report-generator')
+      generateIntelligenceReport.mockRejectedValueOnce(
+        new Error('智谱AI API调用失败')
+      )
+
+      const request = createMockRequest({
+        topic: '人工智能发展趋势'
+      })
+
+      const response = await POST(request)
+      const data = await response.json()
+
+      expect(response.status).toBe(500)
+      expect(data.error).toBe('AI服务调用失败')
+      expect(data.details).toBe('请检查智谱AI API密钥配置是否正确')
+    })
+
+    it('应该处理超时错误', async () => {
+      const { generateIntelligenceReport } = require('@/lib/report-generator')
+      generateIntelligenceReport.mockRejectedValueOnce(
+        new Error('Request timeout after 30 seconds')
+      )
+
+      const request = createMockRequest({
+        topic: '人工智能发展趋势'
+      })
+
+      const response = await POST(request)
+      const data = await response.json()
+
+      expect(response.status).toBe(500)
+      expect(data.error).toBe('请求超时')
+      expect(data.details).toBe('数据采集或AI生成过程超时，请稍后重试')
+    })
+
+    it('应该处理通用错误', async () => {
+      const { generateIntelligenceReport } = require('@/lib/report-generator')
+      generateIntelligenceReport.mockRejectedValueOnce(
+        new Error('未知错误')
+      )
+
+      const request = createMockRequest({
+        topic: '人工智能发展趋势'
+      })
+
+      const response = await POST(request)
+      const data = await response.json()
+
+      expect(response.status).toBe(500)
+      expect(data.error).toBe('报告生成失败')
+      expect(data.details).toBe('未知错误')
+    })
+
+    it('应该处理无效的JSON请求体', async () => {
+      const request = new NextRequest('http://localhost:3000/api/generate-report', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: 'invalid json',
+      })
+
+      const response = await POST(request)
+      const data = await response.json()
+
+      expect(response.status).toBe(500)
+      expect(data.error).toBe('报告生成失败')
+    })
+  })
+
+  describe('GET请求', () => {
+    it('应该返回生成器状态信息', async () => {
+      const response = await GET()
+      const data = await response.json()
+
+      expect(response.status).toBe(200)
+      expect(data.status).toBe('active')
+      expect(data.version).toBe('2.0.0')
+      expect(data.features).toBeInstanceOf(Array)
+      expect(data.supportedTemplates).toBeInstanceOf(Array)
+      expect(data.supportedLanguages).toEqual(['zh', 'en'])
+      expect(data.analysisDepths).toEqual(['basic', 'detailed', 'expert'])
+      expect(data.maxDataSources).toBe(15)
+      expect(data.timestamp).toBeDefined()
+    })
+
+    it('应该包含所有支持的功能', async () => {
+      const response = await GET()
+      const data = await response.json()
+
+      expect(data.features).toContain('多源数据采集')
+      expect(data.features).toContain('智能质量评估')
+      expect(data.features).toContain('专业报告模板')
+      expect(data.features).toContain('实时状态监控')
+      expect(data.features).toContain('质量分数评估')
+    })
+
+    it('应该包含所有支持的模板', async () => {
+      const response = await GET()
+      const data = await response.json()
+
+      expect(data.supportedTemplates).toContain('comprehensive')
+      expect(data.supportedTemplates).toContain('brief')
+      expect(data.supportedTemplates).toContain('technical')
+      expect(data.supportedTemplates).toContain('policy')
+      expect(data.supportedTemplates).toContain('market')
+    })
+
+    it('应该处理GET请求错误', async () => {
+      // Mock console.error to avoid error output in tests
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
+      
+      // This is a bit tricky to test since GET doesn't have much that can fail
+      // We'll test by mocking Date to throw an error
+      const originalDate = global.Date
+      global.Date = jest.fn(() => {
+        throw new Error('Date error')
+      }) as any
+
+      const response = await GET()
+      const data = await response.json()
+
+      expect(response.status).toBe(500)
+      expect(data.error).toBe('获取生成器状态失败')
+      expect(data.details).toBe('Date error')
+
+      // Restore
+      global.Date = originalDate
+      consoleSpy.mockRestore()
+    })
+  })
+
+  describe('参数验证', () => {
+    it('应该接受所有有效的模板类型', async () => {
+      const templates = ['comprehensive', 'brief', 'technical', 'policy', 'market']
+      
+      for (const template of templates) {
+        const request = createMockRequest({
+          topic: '测试议题',
+          template
+        })
+
+        const response = await POST(request)
+        expect(response.status).toBe(200)
+      }
+    })
+
+    it('应该接受所有有效的语言类型', async () => {
+      const languages = ['zh', 'en']
+      
+      for (const language of languages) {
+        const request = createMockRequest({
+          topic: '测试议题',
+          language
+        })
+
+        const response = await POST(request)
+        expect(response.status).toBe(200)
+      }
+    })
+
+    it('应该接受所有有效的分析深度', async () => {
+      const depths = ['basic', 'detailed', 'expert']
+      
+      for (const analysisDepth of depths) {
+        const request = createMockRequest({
+          topic: '测试议题',
+          analysisDepth
+        })
+
+        const response = await POST(request)
+        expect(response.status).toBe(200)
+      }
+    })
+  })
+})
