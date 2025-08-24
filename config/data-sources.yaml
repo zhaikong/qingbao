@@ -1,0 +1,111 @@
+# 数据获取模块配置文件
+# 版本: 1.0
+
+# 数据源配置
+sources:
+  # RSS 信源配置
+  rss:
+    - url: 'http://feeds.bbci.co.uk/news/rss.xml'
+      name: 'BBC News'
+      credibility: 0.90
+      category: '国际新闻'
+    - url: 'https://www.theverge.com/rss/index.xml'
+      name: 'The Verge'
+      credibility: 0.75
+      category: '科技'
+    - url: 'https://feeds.reuters.com/reuters/topNews'
+      name: 'Reuters Top News'
+      credibility: 0.95
+      category: '国际新闻'
+    - url: 'https://rss.cnn.com/rss/edition.rss'
+      name: 'CNN'
+      credibility: 0.80
+      category: '国际新闻'
+
+  # 新闻 API 配置
+  news_api:
+    gnews:
+      enabled: false
+      credibility: 0.85
+      max_results: 20
+      api_key_env: 'GNEWS_API_TOKEN'
+    newsapi:
+      enabled: false  # 网络连接问题，暂时禁用
+      credibility: 0.80
+      max_results: 15
+      api_key_env: 'NEWSAPI_KEY'
+    guardian:
+      enabled: false  # 需要单独注册API密钥
+      credibility: 0.90
+      max_results: 10
+
+  # 搜索引擎配置
+  web_search:
+    zhipu:
+      enabled: true
+      credibility: 0.85
+      engine: 'search_pro'
+    duckduckgo:
+      enabled: true
+      credibility: 0.75
+    searxng:
+      enabled: false  # 需要自部署实例
+      credibility: 0.70
+      instance_url: 'https://your-searxng-instance.com'
+
+  # 社交媒体配置
+  social_media:
+    reddit:
+      enabled: false  # 待实现
+      credibility: 0.60
+      subreddits: ['worldnews', 'technology', 'politics']
+    telegram:
+      enabled: false  # 待实现
+      credibility: 0.65
+
+# 缓存配置
+cache:
+  enabled: true
+  type: 'memory'  # 'memory' 或 'redis'
+  ttl:
+    web_search: 3600    # 1小时 (秒)
+    rss: 900           # 15分钟
+    news_api: 1800     # 30分钟
+    social_media: 300  # 5分钟
+
+# 数据处理配置
+processing:
+  # 去重配置
+  deduplication:
+    enabled: true
+    method: 'url_hash'  # 基于URL的SHA256哈希
+  
+  # 排序配置
+  sorting:
+    primary: 'relevance'    # 第一优先级：相关性
+    secondary: 'date'       # 第二优先级：时间
+    tertiary: 'credibility' # 第三优先级：可信度
+  
+  # 内容过滤
+  filtering:
+    min_content_length: 50  # 最小内容长度
+    exclude_domains: []     # 排除的域名
+    include_languages: ['zh', 'en']  # 包含的语言
+
+# 系统配置
+system:
+  # 并发控制
+  concurrency:
+    max_parallel_sources: 5  # 最大并行数据源数量
+    request_timeout: 8000    # 请求超时时间(毫秒) 从 30000 降到 8000，防止外部源拖慢流程
+  
+  # 错误处理
+  error_handling:
+    max_retries: 3          # 最大重试次数
+    retry_delay: 1000       # 重试延迟(毫秒)
+    fail_fast: false        # 是否快速失败
+  
+  # 日志配置
+  logging:
+    level: 'info'           # 日志级别
+    enable_performance: true # 启用性能日志
